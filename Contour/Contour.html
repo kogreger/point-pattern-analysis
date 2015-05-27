@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Contour</title>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<link rel="stylesheet" href="http://cdn.leafletjs.com/leaflet-0.7.3/leaflet.css" />
+	<script src="http://cdn.leafletjs.com/leaflet-0.7.3/leaflet.js"></script>
+	<script src="http://code.jquery.com/jquery-1.10.2.min.js"></script>
+	<link rel="dat1" type="application/json" href="Contour.geojson" />
+	<style type="text/css">
+		body {
+			padding: 0;
+			margin: 0;
+		}
+		html, body, #map {
+			height: 100%;
+		}
+		.legend {
+			padding: 6px 8px;
+			font: 14px/16px Arial, Helvetica, sans-serif;
+			background: white;
+			background: rgba(255,255,255,0.8);
+			box-shadow: 0 0 15px rgba(0,0,0,0.2);
+			border-radius: 5px;
+			line-height: 18px;
+			color: #555;
+		}
+		.legend i {
+			width: 18px;
+			height: 18px;
+			float: left;
+			margin-right: 8px;
+		}
+		.legend table, .legend td {
+			border: none;
+		}
+		.value {
+			border: none;
+			padding: 0px 0px 0px 8px;
+			text-align: left;
+			vertical-align: middle;
+		}
+		.circle {
+			border: none;
+			padding: 0px;
+			text-align: center;
+			vertical-align: middle;
+		}
+		.shape {
+			padding: 0px;
+			text-align: center;
+			vertical-align: middle;
+		}
+		.ln {
+			stroke: #0033ff;
+			stroke-width: 5;
+			stroke-opacity: 0.5;
+			stroke-linecap: round;
+		}
+		.plgn {
+			fill: #0033ff;
+			fill-opacity: 0.5;
+			stroke: #0033ff;
+			stroke-width: 4;
+			stroke-opacity: 0.5;
+			stroke-linejoin: round;
+		}
+		.legend i {
+			opacity: 0.5;
+		}				
+	</style>
+</head>
+<body>
+	<div id="map"></div>
+	<script type="text/javascript">
+		var map = L.map('map');
+		
+		// scale bar
+		L.control.scale().addTo(map);
+
+		// base layer
+		var baseMaps = {};
+		var baseMap = L.tileLayer('http://{s}.tile.thunderforest.com/landscape/{z}/{x}/{y}.png', {"attribution":"Tiles &copy; <a href=\"http://thunderforest.com\", target=\"_blank\">Thunderforest</a>, Map data &copy; <a href=\"http://openstreetmap.org/copyright\", target=\"_blan\">OpenStreetMap contributors</a>"});
+		baseMap.addTo(map);
+		baseMaps["Thunderforest Landscape"] = baseMap;
+
+		// styling
+		function getValue(x) {
+			return x >= 2.6e-05 ? "#808080" :
+			       x >= 2.4e-05 ? "#0000FF" :
+			       x >= 2.2e-05 ? "#1500EA" :
+			       x >= 2e-05 ? "#2B00D4" :
+			       x >= 1.8e-05 ? "#4000BF" :
+			       x >= 1.6e-05 ? "#5500AA" :
+			       x >= 1.4e-05 ? "#6A0095" :
+			       x >= 1.2e-05 ? "#800080" :
+			       x >= 1e-05 ? "#95006A" :
+			       x >= 8e-06 ? "#AA0055" :
+			       x >= 6e-06 ? "#BF0040" :
+			       x >= 4e-06 ? "#D5002B" :
+			       x >= 2e-06 ? "#EA0015" :
+			       x >= 0 ? "#FF0000" :
+			       "#808080";
+		}			
+		function style1(feature) {
+			return {
+				"color": getValue(feature.properties["level"]),
+
+				"weight": 2, "fillOpacity": 0.5
+			};
+		}
+
+		// data layers
+        var layers = {};
+        var group = new L.featureGroup;
+		function addDataToMap(data, style, layer) {
+			layers[layer] = L.geoJson(data, {
+				onEachFeature: (typeof onEachFeature == "undefined") ? undefined : onEachFeature,
+				pointToLayer: function (feature, latlng) {return L.circleMarker(latlng);},
+				style: style
+			});
+			layers[layer].addTo(map);	
+        	group.addLayer(layers[layer])
+			map.fitBounds(group.getBounds());
+		};
+		
+		if(typeof style1 == "undefined") style1 = undefined;
+		$.getJSON($("link[rel='dat1']").attr("href"), function(x) {addDataToMap(x, style1, "Contour")});
+
+		// legend
+				var legend = L.control({position: 'bottomright'});
+				legend.onAdd = function(map) {
+					var div = L.DomUtil.create('div', 'legend');
+				    var labels = [];
+				    var grades = [0, 2e-06, 4e-06, 6e-06, 8e-06, 1e-05, 1.2e-05, 1.4e-05, 1.6e-05, 1.8e-05, 2e-05, 2.2e-05, 2.4e-05, 2.6e-05];
+
+					div.innerHTML += 'Number of Crimes<br>'
+					for (var i = 0; i < grades.length-1; i++) { 
+						div.innerHTML +=
+						        '<i style="background:' + getValue(grades[i]) + '"></i> ' +
+						        								grades[i] + '&ndash;' + grades[i + 1] + '<br>';
+					}
+					
+				
+			return div;
+		};
+		legend.addTo(map);
+				
+	</script>
+</body>
+</html>

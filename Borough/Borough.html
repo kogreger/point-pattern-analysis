@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Borough</title>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<link rel="stylesheet" href="http://cdn.leafletjs.com/leaflet-0.7.3/leaflet.css" />
+	<script src="http://cdn.leafletjs.com/leaflet-0.7.3/leaflet.js"></script>
+	<script src="http://code.jquery.com/jquery-1.10.2.min.js"></script>
+	<link rel="dat1" type="application/json" href="Borough.geojson" />
+	<style type="text/css">
+		body {
+			padding: 0;
+			margin: 0;
+		}
+		html, body, #map {
+			height: 100%;
+		}
+		table, td {
+			border-collapse: collapse;
+			border-style: solid;
+			border-width: 1px;
+			border-color: #e9e9e9;
+			padding: 5px;
+		}
+		.evenrowcol{
+			background-color: #f6f6f6;
+		}
+		.legend {
+			padding: 6px 8px;
+			font: 14px/16px Arial, Helvetica, sans-serif;
+			background: white;
+			background: rgba(255,255,255,0.8);
+			box-shadow: 0 0 15px rgba(0,0,0,0.2);
+			border-radius: 5px;
+			line-height: 18px;
+			color: #555;
+		}
+		.legend i {
+			width: 18px;
+			height: 18px;
+			float: left;
+			margin-right: 8px;
+		}
+		.legend table, .legend td {
+			border: none;
+		}
+		.value {
+			border: none;
+			padding: 0px 0px 0px 8px;
+			text-align: left;
+			vertical-align: middle;
+		}
+		.circle {
+			border: none;
+			padding: 0px;
+			text-align: center;
+			vertical-align: middle;
+		}
+		.shape {
+			padding: 0px;
+			text-align: center;
+			vertical-align: middle;
+		}
+		.ln {
+			stroke: #0033ff;
+			stroke-width: 5;
+			stroke-opacity: 0.5;
+			stroke-linecap: round;
+		}
+		.plgn {
+			fill: #0033ff;
+			fill-opacity: 0.5;
+			stroke: #0033ff;
+			stroke-width: 4;
+			stroke-opacity: 0.5;
+			stroke-linejoin: round;
+		}
+		.legend i {
+			opacity: 0.4;
+		}				
+	</style>
+</head>
+<body>
+	<div id="map"></div>
+	<script type="text/javascript">
+		var map = L.map('map');
+		
+		// scale bar
+		L.control.scale().addTo(map);
+
+		// base layer
+		var baseMaps = {};
+		var baseMap = L.tileLayer('http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {"attribution":"&copy; <a href=\"http://openstreetmap.org/copyright\", target=\"_blank\">OpenStreetMap contributors</a>"});
+		baseMap.addTo(map);
+		baseMaps["OpenStreetMap"] = baseMap;
+
+		// popup
+		function onEachFeature(feature, layer) {
+			if (feature.properties &&  feature.properties["name"] && feature.properties["Intensity"] && feature.properties["Intensity.Area"]) {
+				layer.bindPopup(
+					"<table>" +
+					"<tr class='oddrowcol'><td>name: </td><td>"+feature.properties["name"]+"</td></tr>" +
+					"<tr class='evenrowcol'><td>Intensity: </td><td>"+feature.properties["Intensity"]+"</td></tr>" +
+					"<tr class='oddrowcol'><td>Intensity.Area: </td><td>"+feature.properties["Intensity.Area"]+"</td></tr>" +
+					"</table>"
+				);
+			}
+		}
+
+		// styling
+		function getValue(x) {
+			return x >= 208 ? "#808080" :
+			       x >= 188 ? "#FF80FF" :
+			       x >= 168 ? "#FF99FF" :
+			       x >= 148 ? "#FFB3FF" :
+			       x >= 128 ? "#FFCCFF" :
+			       x >= 108 ? "#FFE6FF" :
+			       x >= 88 ? "#E6FFFF" :
+			       x >= 68 ? "#CCFFFF" :
+			       x >= 48 ? "#B3FFFF" :
+			       x >= 28 ? "#99FFFF" :
+			       x >= 8 ? "#80FFFF" :
+			       "#808080";
+		}			
+		function style1(feature) {
+			return {
+				"color": getValue(feature.properties["Intensity"]),
+
+				"weight": 0, "fillOpacity": 0.4
+			};
+		}
+
+		// data layers
+        var layers = {};
+        var group = new L.featureGroup;
+		function addDataToMap(data, style, layer) {
+			layers[layer] = L.geoJson(data, {
+				onEachFeature: (typeof onEachFeature == "undefined") ? undefined : onEachFeature,
+				pointToLayer: function (feature, latlng) {return L.circleMarker(latlng);},
+				style: style
+			});
+			layers[layer].addTo(map);	
+        	group.addLayer(layers[layer])
+			map.fitBounds(group.getBounds());
+		};
+		
+		if(typeof style1 == "undefined") style1 = undefined;
+		$.getJSON($("link[rel='dat1']").attr("href"), function(x) {addDataToMap(x, style1, "Borough")});
+
+		// legend
+				var legend = L.control({position: 'bottomright'});
+				legend.onAdd = function(map) {
+					var div = L.DomUtil.create('div', 'legend');
+				    var labels = [];
+				    var grades = [8, 28, 48, 68, 88, 108, 128, 148, 168, 188, 208];
+
+					div.innerHTML += 'Number of Crimes<br>'
+					for (var i = 0; i < grades.length-1; i++) { 
+						div.innerHTML +=
+						        '<i style="background:' + getValue(grades[i]) + '"></i> ' +
+						        								grades[i] + '&ndash;' + grades[i + 1] + '<br>';
+					}
+					
+				
+			return div;
+		};
+		legend.addTo(map);
+				
+	</script>
+</body>
+</html>
